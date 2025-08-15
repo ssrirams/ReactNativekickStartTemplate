@@ -1,0 +1,59 @@
+# .gitlab-ci.yml
+
+# Define the stages of your pipeline
+stages:
+  - install
+  - build
+  - test
+  - deploy
+
+# Install dependencies
+install_dependencies:
+  stage: install
+  image: node:18 # Use Node.js 18 (adjust if necessary for your app)
+  script:
+    - echo "Installing dependencies..."
+    - yarn install
+
+# Build the app (Android & iOS)
+build:
+  stage: build
+  image: node:18
+  script:
+    - echo "Building the app..."
+    # Install dependencies if not already cached
+    - npm install # or yarn install
+    # Build the Android app (adjust if needed)
+    - npx react-native run-android --variant=release
+    # Build the iOS app (ensure you have a macOS runner if building iOS)
+    - npx react-native run-ios --configuration Release
+  artifacts:
+    paths:
+      - android/app/build/outputs/
+      - ios/build/
+    expire_in: 1 hour
+
+# Run tests
+test:
+  stage: test
+  image: node:18
+  script:
+    - echo "Running tests..."
+    # Run tests for the React Native app
+    - npm test # or yarn test
+  dependencies:
+    - install_dependencies
+
+# Deploy (optional, depending on your deployment method)
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploying the app..."
+    # Add your deployment steps here, e.g., uploading to an app store, Firebase, etc.
+    # Example for Android APK deployment to Firebase App Distribution:
+    # - firebase appdistribution:distribute android/app/build/outputs/apk/release/app-release.apk --app YOUR_APP_ID --groups "testers"
+  only:
+    - main  # Deploy only from the main branch
+  when: manual  # Make deployment manual (optional)
+
+# Optional: Set up email notifications in GitLab UI
